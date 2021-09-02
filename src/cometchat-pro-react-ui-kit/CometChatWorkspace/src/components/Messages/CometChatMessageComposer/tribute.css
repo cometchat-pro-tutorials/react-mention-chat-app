@@ -1,0 +1,22 @@
+.tribute-container {
+  background: #fff;
+  border-radius: 0.5rem;
+  box-shadow: 0 2px 4px rgb(0 0 0 / 10%), 0 8px 16px rgb(0 0 0 / 10%);
+  max-height: 15rem;
+  overflow: auto;
+  padding: 0.75rem;
+  top: 27.625rem !important;
+  z-index: 10000;
+}
+
+.tribute-container ul { 
+  list-style-type: none;
+}
+
+.tribute-container ul li { 
+  padding: 0.25rem;
+}
+
+.tribute-container ul li:hover {
+  cursor: pointer;
+}
