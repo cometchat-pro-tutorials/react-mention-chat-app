@@ -208,8 +208,10 @@ class CometChatMessageList extends React.PureComponent {
 	};
 
 	showToastForMentionMessage = (message) => { 
-		const toast = `You was tagged by ${message.sender.name}`;
-		this.context.setToastMessage("success", toast);
+		if (message.text.includes(`@${this.state.loggedInUser.name}`)) {
+			const toastMessage = `You was tagged by ${message.sender.name}`;
+			this.context.setToastMessage("success", toastMessage);
+		}
 	}
 
 	//callback for listener functions
