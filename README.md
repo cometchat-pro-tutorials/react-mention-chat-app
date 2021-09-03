@@ -68,4 +68,4 @@ Questions about running the demo? [Open an issue](https://github.com/hieptl/reac
 - 👾 [GitHub](https://www.github.com/cometchat-pro)
 - 🔥 [Firebase](https://console.firebase.google.com)
 - 🔷 [React.js](https://reactjs.org/)
-- ✨ [Live Demo]()
+- ✨ [Live Demo](https://react-mention-chat-app.glitch.me)
