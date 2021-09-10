@@ -33,7 +33,7 @@ function Header() {
           user && (
             <div className="header__right">
               <img src={user.avatar} alt={user.email}/>
-              <span>Hello, {user.email}</span>
+              <span>Hello, {user.userName}</span>
             </div>
           )
         }

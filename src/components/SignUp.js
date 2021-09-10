@@ -15,6 +15,7 @@ function SignUp(props) {
 
   // create refs to get user's email, user's password, user's confirm password.
   const emailRef = useRef(null);
+  const userNameRef = useRef(null);
   const passwordRef = useRef(null);
   const confirmPasswordRef = useRef(null);
 
@@ -42,13 +43,17 @@ function SignUp(props) {
    * @param {*} param0 
    * @returns 
    */
-  const isSignupValid = ({ email, password, confirmPassword }) => {
+  const isSignupValid = ({ email, password, userName, confirmPassword }) => {
     if (!validator.isEmail(email)) {
       alert("Please input your email");
       return false;
     }
     if (validator.isEmpty(password) || !validator.isLength(password, {min: 6})) {
       alert("Please input your password. You password must have at least 6 characters");
+      return false;
+    }
+    if (validator.isEmpty(userName)) {
+      alert("Please input your user name");
       return false;
     }
     if (validator.isEmpty(confirmPassword)) {
@@ -68,10 +73,11 @@ function SignUp(props) {
   const signup = () => {
     // get user's email, user's password, user's confirm password.
     const email = emailRef.current.value;
+    const userName = userNameRef.current.value;
     const password = passwordRef.current.value;
     const confirmPassword = confirmPasswordRef.current.value;
 
-    if (isSignupValid({ email, password, confirmPassword })) {
+    if (isSignupValid({ email, password, userName, confirmPassword })) {
       // show loading 
       setIsLoading(true);
       // create new user's uuid.
@@ -85,6 +91,7 @@ function SignUp(props) {
           realTimeDb.ref(`users/${userUuid}`).set({
             id: userUuid,
             email,
+            userName,
             avatar: userAvatar
           }).then(() => {
             alert(`${userCrendentials.user.email} was created successfully! Please sign in with your created account`);
@@ -92,7 +99,7 @@ function SignUp(props) {
             const authKey = `${process.env.REACT_APP_COMETCHAT_AUTH_KEY}`;  
             // call cometchat service to register a new account.
             const user = new cometChat.User(userUuid);
-            user.setName(email);
+            user.setName(userName);
             user.setAvatar(userAvatar);
 
             cometChat.createUser(user, authKey).then(
@@ -130,6 +137,7 @@ function SignUp(props) {
         <div className="signup__subtitle"></div>
         <div className="signup__form">
           <input type="text" placeholder="Email" ref={emailRef} />
+          <input type="text" placeholder="Username" ref={userNameRef} />
           <input type="password" placeholder="Password" ref={passwordRef} />
           <input
             type="password"

@@ -58,6 +58,7 @@ import heartIcon from "./resources/heart.png";
 
 class CometChatMessageComposer extends React.PureComponent {
 	static contextType = CometChatContext;
+	groupListenerId = "group_" + new Date().getTime();
 
 	constructor(props) {
 		super(props);
@@ -67,6 +68,8 @@ class CometChatMessageComposer extends React.PureComponent {
 		this.audioUploaderRef = React.createRef();
 		this.videoUploaderRef = React.createRef();
 		this.messageInputRef = React.createRef();
+		this.tributeRef = React.createRef();
+		this.prevItemType = React.createRef();
 		this.liveReactionInProgress = false;
 		this.isTyping = false;
 
@@ -100,7 +103,9 @@ class CometChatMessageComposer extends React.PureComponent {
 			.catch(error => this.props.actionGenerated(enums.ACTIONS["ERROR"], [], "SOMETHING_WRONG"));
 
 		this.item = this.context.type === CometChat.ACTION_TYPE.TYPE_USER || this.context.type === CometChat.ACTION_TYPE.TYPE_GROUP ? this.context.item : null;
+		this.prevItemType.current = this.context.type;
 		this.enableMentions();
+		this.onNewMemberJoined();
 		this.enableLiveReaction();
 		this.enablePolls();
 		this.enableTypingIndicator();
@@ -159,7 +164,10 @@ class CometChatMessageComposer extends React.PureComponent {
 		}
 
 		this.item = this.context.type === CometChat.ACTION_TYPE.TYPE_USER || this.context.type === CometChat.ACTION_TYPE.TYPE_GROUP ? this.context.item : null;
-		this.enableMentions();
+		if (this.prevItemType.current !== this.context.type) { 
+			this.prevItemType.current = this.context.type;
+			this.enableMentions();
+		}
 		this.enableLiveReaction();
 		this.enablePolls();
 		this.enableTypingIndicator();
@@ -171,9 +179,13 @@ class CometChatMessageComposer extends React.PureComponent {
 		this.enableCollaborativeWhiteboard();
 	}
 
-	attachTribute = (tribute) => {
-		if (tribute && this.messageInputRef) { 
-			tribute.attach(this.messageInputRef.current);
+	componentWillUnmount() {
+		this.removeListeners();
+	}
+
+	attachTribute = () => {
+		if (this.tributeRef && this.tributeRef.current && this.messageInputRef) { 
+			this.tributeRef.current.attach(this.messageInputRef.current);
 		}
 	}
 
@@ -182,7 +194,7 @@ class CometChatMessageComposer extends React.PureComponent {
 			const transformedGroupMembers = [];
 			for (const member of groupMembers) {
 				if (member && member.name && member.name !== this.loggedInUser.name) { 
-					transformedGroupMembers.push({key: `${member.name}`, value: `${member.name}`});
+					transformedGroupMembers.push({key: `${member.name}`, value: `@{${member.name}|${member.uid}}`});
 				}
 			}
 			return transformedGroupMembers;
@@ -200,10 +212,12 @@ class CometChatMessageComposer extends React.PureComponent {
 			groupMemberRequest.fetchNext().then(
 				groupMembers => {
 					const transformedGroupMembers = this.transformGroupMembers(groupMembers);
-					const tribute = new Tribute({
-						values: transformedGroupMembers
+					this.tributeRef.current = new Tribute({
+						values: transformedGroupMembers,
+						lookup: 'key',
+  					fillAttr: 'key'
 					});
-					this.attachTribute(tribute);
+					this.attachTribute();
 				},
 				error => {
 				}
@@ -215,12 +229,14 @@ class CometChatMessageComposer extends React.PureComponent {
 		if (userId) {
 			CometChat.getUser(userId).then(
 				user => {
-					const tribute = new Tribute({
+					this.tributeRef.current = new Tribute({
 						values: [
-							{key: `${user.name}`, value: `${user.name}`}
-						]
+							{key: `${user.name}`, value: `@{${user.name}|${user.uid}}`}
+						],
+						lookup: 'key',
+  					fillAttr: 'key'
 					});
-					this.attachTribute(tribute);
+					this.attachTribute();
 				},
 				error => {
 				}
@@ -228,10 +244,17 @@ class CometChatMessageComposer extends React.PureComponent {
 		}
 	};
 
+	detachTribute = () => { 
+		if (this.tributeRef && this.tributeRef.current) { 
+			this.tributeRef.current.detach(this.messageInputRef.current);
+		}
+	}
+
 	enableMentions = () => {
 		this.context.FeatureRestriction.isMentionsEnabled()
 			.then(response => {
 				if (response) {
+					this.detachTribute();
 					const receiverDetails = this.getReceiverDetails();
 					if (receiverDetails && receiverDetails.receiverId && receiverDetails.receiverType) {
 						switch (receiverDetails.receiverType) {
@@ -250,6 +273,39 @@ class CometChatMessageComposer extends React.PureComponent {
 			.catch(error => {
 			});
 	};
+
+	removeListeners = () => {
+		CometChat.removeGroupListener(this.groupListenerId);
+	}
+
+	onNewMemberJoined = () => {
+		CometChat.addGroupListener(
+			this.groupListenerId,
+			new CometChat.GroupListener({
+				onGroupMemberScopeChanged: (message, changedUser, newScope, oldScope, changedGroup) => {
+					this.enableMentions();
+				}, 
+				onGroupMemberKicked: (message, kickedUser, kickedBy, kickedFrom) => {
+					this.enableMentions();
+				}, 
+				onGroupMemberBanned: (message, bannedUser, bannedBy, bannedFrom) => {
+					this.enableMentions();
+				}, 
+				onGroupMemberUnbanned: (message, unbannedUser, unbannedBy, unbannedFrom) => {
+					this.enableMentions();
+				}, 
+				onMemberAddedToGroup: (message, userAdded, userAddedBy, userAddedIn) => {
+					this.enableMentions();
+				}, 
+				onGroupMemberLeft: (message, leavingUser, group) => {
+					this.enableMentions();
+				}, 
+				onGroupMemberJoined: (message, joinedUser, joinedGroup) => {
+					this.enableMentions();
+				}
+			})
+		);
+	}
 
 	/**
 	 * if live reactions feature is disabled
@@ -655,6 +711,45 @@ class CometChatMessageComposer extends React.PureComponent {
 		}
 	};
 
+	shouldTransformMessageInput = (messageInput) => {
+		return messageInput &&
+			this.tributeRef &&
+			this.tributeRef.current &&
+			this.tributeRef.current.collection &&
+			this.tributeRef.current.collection.length !== 0 &&
+			this.tributeRef.current.collection[0].values &&
+			this.tributeRef.current.collection[0].values.length !== 0;
+	}
+
+	getTributeValue = (tributeValues, message) => {
+		for (const tribute of tributeValues) {
+			if (message === `@${tribute.key}`) {
+				return tribute.value;
+			}
+		}
+		return null;
+	}
+
+	processTransformMessageInput = (tributeValues, messageInputArray) => {
+		return messageInputArray.map(message => {
+			const tributeValue = this.getTributeValue(tributeValues, message);
+			return tributeValue ? tributeValue : message;
+		});
+	}
+
+	transformMessageInput = (messageInput) => {
+		if (!messageInput.includes('@')) { 
+			return messageInput;
+		}
+		if (this.shouldTransformMessageInput(messageInput)) {
+			const tributeValues = this.tributeRef.current.collection[0].values;
+			const messageInputArray = messageInput.split(/\s/);
+			const transformedMessageInputArray = this.processTransformMessageInput(tributeValues, messageInputArray);
+			return transformedMessageInputArray.join(' ');
+		}
+		return messageInput;
+	}
+
 	sendTextMessage = () => {
 		if (this.state.emojiViewer) {
 			this.setState({ emojiViewer: false });
@@ -674,13 +769,15 @@ class CometChatMessageComposer extends React.PureComponent {
 		let { receiverId, receiverType } = this.getReceiverDetails();
 		let messageInput = this.state.messageInput.trim();
 
-		let textMessage = new CometChat.TextMessage(receiverId, messageInput, receiverType);
+		const transformedMessageInput = this.transformMessageInput(messageInput);
+
+		let textMessage = new CometChat.TextMessage(receiverId, transformedMessageInput, receiverType);
 		if (this.props.parentMessageId) {
 			textMessage.setParentMessageId(this.props.parentMessageId);
 		}
 		textMessage.setSender(this.loggedInUser);
 		textMessage.setReceiver(this.context.type);
-		textMessage.setText(messageInput);
+		textMessage.setText(transformedMessageInput);
 		textMessage._composedAt = getUnixTimestamp();
 		textMessage._id = ID();
 
