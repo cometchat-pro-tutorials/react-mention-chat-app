@@ -58,6 +58,7 @@ class CometChatMessageList extends React.PureComponent {
 		};
 
 		this.messagesEnd = React.createRef();	
+		this.members = React.createRef();
 	}
 
 	componentDidMount() {
@@ -82,10 +83,25 @@ class CometChatMessageList extends React.PureComponent {
 			this.MessageListManager = new MessageListManager(this.context, this.context.item, this.context.type);
 		}
 
-		
 		this.MessageListManager.initializeMessageRequest().then(() => {
-			this.messageHandler(this.context.item, enums.ACTIONS["MESSAGES_INITIAL_FETCH"]);
-			this.MessageListManager.attachListeners(this.messageUpdated);
+			this.context.FeatureRestriction.isMentionsEnabled()
+				.then(response => {
+					if (response) {
+						this.initMembers().then(members => {
+							if (members && members.length !== 0) {
+								this.members.current = members;
+								this.messageHandler(this.context.item, enums.ACTIONS["MESSAGES_INITIAL_FETCH"]);
+								this.MessageListManager.attachListeners(this.messageUpdated);
+							}
+						});
+					} else {
+						this.messageHandler(this.context.item, enums.ACTIONS["MESSAGES_INITIAL_FETCH"]);
+						this.MessageListManager.attachListeners(this.messageUpdated);
+					}
+				})
+				.catch(error => {
+				});
+			
 		});
 	}
 
@@ -144,12 +160,130 @@ class CometChatMessageList extends React.PureComponent {
 		this.MessageListManager = null;
 	}
 
+	transformGroupMembers = (groupMembers) => { 
+		if (groupMembers && groupMembers.length !== 0) { 
+			const transformedGroupMembers = [];
+			for (const member of groupMembers) {
+				if (member && member.name) { 
+					transformedGroupMembers.push({key: `${member.name}`, value: `@{${member.name}|${member.uid}}`});
+				}
+			}
+			return transformedGroupMembers;
+		}
+		return [];
+	}
+
+	initGroupMembers = (groupId) => {
+		return new Promise(resolve => {
+			const limit = 30;
+			const groupMemberRequest = new CometChat.GroupMembersRequestBuilder(groupId)
+				.setLimit(limit)
+				.build();
+			groupMemberRequest.fetchNext().then(
+				groupMembers => {
+					resolve(this.transformGroupMembers(groupMembers));
+				},
+				error => {
+				}
+			);
+		});
+	};
+
+	initPrivateChatMember = (userId) => {
+		return new Promise(resolve => {
+			CometChat.getUser(userId).then(
+				user => {
+					resolve([
+						{key: `${user.name}`, value: `@{${user.name}|${user.uid}}`},
+						{key: `${this.state.loggedInUser.name}`, value: `@{${this.state.loggedInUser.name}|${this.state.loggedInUser.uid}}`},
+					]);
+				},
+				error => {
+				}
+			);
+		});
+	};
+
+	getReceiverDetails = () => {
+		let receiverId;
+		let receiverType;
+
+		if (this.context.type === CometChat.ACTION_TYPE.TYPE_USER) {
+			receiverId = this.context.item.uid;
+			receiverType = CometChat.RECEIVER_TYPE.USER;
+		} else if (this.context.type === CometChat.ACTION_TYPE.TYPE_GROUP) {
+			receiverId = this.context.item.guid;
+			receiverType = CometChat.RECEIVER_TYPE.GROUP;
+		}
+
+		return { receiverId: receiverId, receiverType: receiverType };
+	};
+
+	initMembers = () => { 
+		return new Promise(resolve => {
+			const receiverDetails = this.getReceiverDetails();
+			if (receiverDetails && receiverDetails.receiverId && receiverDetails.receiverType) {
+				switch (receiverDetails.receiverType) {
+					case CometChat.RECEIVER_TYPE.GROUP:
+						this.initGroupMembers(receiverDetails.receiverId).then(members => {
+							resolve(members);
+						});
+						break;
+					case CometChat.RECEIVER_TYPE.USER:
+						this.initPrivateChatMember(receiverDetails.receiverId).then(members => {
+							resolve(members);
+						});
+						break;
+					default:
+						break;
+				}
+			}
+		});
+	};
+
 	scrollToBottom = (scrollHeight = 0) => {
 
 		if (this.messagesEnd) {
 			this.messagesEnd.scrollTop = this.messagesEnd.scrollHeight - scrollHeight;
 		}
 	};
+
+	shouldTransformMessage = (message) => { 
+		return message &&
+			message.text &&
+			message.data &&
+			message.data.text &&
+			message.text.includes('@') &&
+			this.members &&
+			this.members.current &&
+			this.members.current.length !== 0;
+	}
+
+	getTransformedWord = (message) => {
+		for (const member of this.members.current) {
+			if (message === member.value) {
+				return `@${member.key}`;
+			}
+		}
+		return null;
+	}
+
+	processTransformMessageInput = (messageInputArray) => {
+		return messageInputArray.map(message => {
+			const transformedWord = this.getTransformedWord(message);
+			return transformedWord ? transformedWord : message;
+		});
+	}
+
+	transformSingleMessage = (message) => {
+		if (this.shouldTransformMessage(message)) { 
+			const messageInput = message.text;
+			const messageInputArray = messageInput.split(/\s/);
+			const transformedMessage = this.processTransformMessageInput(messageInputArray).join(' ');
+			return {...message, data: {text: transformedMessage}, text: transformedMessage};
+		}
+		return message;
+	}
 
 	messageHandler = (item, actionGenerated = enums.ACTIONS["MESSAGES_FETCHED"]) => {
 		this.fetchMessages()
@@ -181,7 +315,8 @@ class CometChatMessageList extends React.PureComponent {
 
 				//abort(don't return messagelist), when the chat window changes
 				if ((item.hasOwnProperty("uid") && this.context.item.hasOwnProperty("uid") && item.uid === this.context.item.uid) || (item.hasOwnProperty("guid") && this.context.item.hasOwnProperty("guid") && item.guid === this.context.item.guid)) {
-					this.props.actionGenerated(actionGenerated, messageList);
+					const transformedMessageList = messageList.map(message => this.transformSingleMessage(message));
+					this.props.actionGenerated(actionGenerated, transformedMessageList);
 				}
 			})
 			.catch(error => {
@@ -231,8 +366,9 @@ class CometChatMessageList extends React.PureComponent {
 				break;
 			case enums.TEXT_MESSAGE_RECEIVED:
 			case enums.MEDIA_MESSAGE_RECEIVED:
-				this.showToastForMentionMessage(message);
-				this.onMessageReceived(message);
+				const transformedMessage = this.transformSingleMessage(message);
+				this.showToastForMentionMessage(transformedMessage);
+				this.onMessageReceived(transformedMessage);
 				break;
 			case enums.CUSTOM_MESSAGE_RECEIVED:
 				this.onCustomMessageReceived(message);
@@ -362,22 +498,21 @@ class CometChatMessageList extends React.PureComponent {
 	};
 
 	onMessageReceived = message => {
-
 		//mark the message as delivered
 		this.markMessageAsDelivered(message);
 
 		/**
 		 * message receiver is chat window group
 		 */
-		if (this.context.type === CometChat.RECEIVER_TYPE.GROUP && message.getReceiverType() === CometChat.RECEIVER_TYPE.GROUP && message.getReceiverId() === this.context.item.guid) {
+		if (this.context.type === CometChat.RECEIVER_TYPE.GROUP && message.receiverType === CometChat.RECEIVER_TYPE.GROUP && message.receiverId === this.context.item.guid) {
 			this.messageReceivedHandler(message, CometChat.RECEIVER_TYPE.GROUP);
-		} else if (this.context.type === CometChat.RECEIVER_TYPE.USER && message.getReceiverType() === CometChat.RECEIVER_TYPE.USER) {
+		} else if (this.context.type === CometChat.RECEIVER_TYPE.USER && message.receiverType === CometChat.RECEIVER_TYPE.USER) {
 			/**
 			 * If the message sender is chat window user and message receiver is logged-in user
 			 * OR
 			 * If the message sender is logged-in user and message receiver is chat window user
 			 */
-			if ((message.getSender().uid === this.context.item.uid && message.getReceiverId() === this.state.loggedInUser?.uid) || (message.getSender().uid === this.state.loggedInUser?.uid && message.getReceiverId() === this.context.item.uid)) {
+			if ((message.sender.uid === this.context.item.uid && message.receiverId === this.state.loggedInUser?.uid) || (message.sender.uid === this.state.loggedInUser?.uid && message.receiverId === this.context.item.uid)) {
 				this.messageReceivedHandler(message, CometChat.RECEIVER_TYPE.USER);
 			}
 		}

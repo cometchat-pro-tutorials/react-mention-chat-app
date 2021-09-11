@@ -737,17 +737,25 @@ class CometChatMessageComposer extends React.PureComponent {
 		});
 	}
 
-	transformMessageInput = (messageInput) => {
-		if (!messageInput.includes('@')) { 
-			return messageInput;
+	transformTextMessage = (textMessage) => {
+		if (textMessage && textMessage.text && textMessage.data && textMessage.data.text) {
+			const messageInput = textMessage.text;
+			if (!messageInput.includes('@')) { 
+				return messageInput;
+			}
+			if (this.shouldTransformMessageInput(messageInput)) {
+				const tributeValues = this.tributeRef.current.collection[0].values;
+				const messageInputArray = messageInput.split(/\s/);
+				const transformedMessageInput = this.processTransformMessageInput(tributeValues, messageInputArray).join(' ');
+				return {
+					...textMessage,
+					data: {text: transformedMessageInput},
+					text: transformedMessageInput
+				};
+			}
+			return textMessage;
 		}
-		if (this.shouldTransformMessageInput(messageInput)) {
-			const tributeValues = this.tributeRef.current.collection[0].values;
-			const messageInputArray = messageInput.split(/\s/);
-			const transformedMessageInputArray = this.processTransformMessageInput(tributeValues, messageInputArray);
-			return transformedMessageInputArray.join(' ');
-		}
-		return messageInput;
+		return textMessage;
 	}
 
 	sendTextMessage = () => {
@@ -769,31 +777,33 @@ class CometChatMessageComposer extends React.PureComponent {
 		let { receiverId, receiverType } = this.getReceiverDetails();
 		let messageInput = this.state.messageInput.trim();
 
-		const transformedMessageInput = this.transformMessageInput(messageInput);
+		
 
-		let textMessage = new CometChat.TextMessage(receiverId, transformedMessageInput, receiverType);
+		let textMessage = new CometChat.TextMessage(receiverId, messageInput, receiverType);
 		if (this.props.parentMessageId) {
 			textMessage.setParentMessageId(this.props.parentMessageId);
 		}
 		textMessage.setSender(this.loggedInUser);
 		textMessage.setReceiver(this.context.type);
-		textMessage.setText(transformedMessageInput);
+		textMessage.setText(messageInput);
 		textMessage._composedAt = getUnixTimestamp();
 		textMessage._id = ID();
 
-		this.props.actionGenerated(enums.ACTIONS["MESSAGE_COMPOSED"], [textMessage]);
+		const transformedTextMessage = this.transformTextMessage(textMessage);
+
+		this.props.actionGenerated(enums.ACTIONS["MESSAGE_COMPOSED"], [transformedTextMessage]);
 		this.setState({ messageInput: "", replyPreview: false });
 
 		this.messageInputRef.current.textContent = "";
 		SoundManager.play(enums.CONSTANTS.AUDIO["OUTGOING_MESSAGE"], this.context);
 
-		CometChat.sendMessage(textMessage)
+		CometChat.sendMessage(transformedTextMessage)
 			.then(message => {
-				const newMessageObj = { ...message, _id: textMessage._id };
+				const newMessageObj = { ...message, _id: transformedTextMessage._id };
 				this.props.actionGenerated(enums.ACTIONS["MESSAGE_SENT"], [newMessageObj]);
 			})
 			.catch(error => {
-				const newMessageObj = { ...textMessage, error: error };
+				const newMessageObj = { ...transformedTextMessage, error: error };
 				this.props.actionGenerated(enums.ACTIONS["ERROR_IN_SENDING_MESSAGE"], [newMessageObj]);
 
 				if (error && error.hasOwnProperty("code") && error.code === "ERR_GUID_NOT_FOUND") {

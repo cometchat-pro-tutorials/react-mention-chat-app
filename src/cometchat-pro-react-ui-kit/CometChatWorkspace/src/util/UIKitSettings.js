@@ -44,17 +44,17 @@ export class UIKitSettings {
 
 		this.searchUsers = true;
 		this.searchGroups = true;
-		this.searchMessages = true;
-		this.searchChats = true;
+		this.searchMessages = false;
+		this.searchChats = false;
 
-		this.unreadCount = true;
+		this.unreadCount = false;
 
 		this.publicGroup = true;
 		this.privateGroup = true;
-		this.passwordGroup = true;
+		this.passwordGroup = false;
 
-		this.blockUser = true;
-		this.viewShareMedia = true;
+		this.blockUser = false;
+		this.viewShareMedia = false;
 
 		this.groupCreation = true;
 		this.allowDeleteGroup = true;
@@ -62,75 +62,75 @@ export class UIKitSettings {
 		this.viewGroupMembers = true;
 		this.kickMember = true;
 		this.banMember = true;
-		this.allowPromoteDemoteMembers = true;
-		this.allowAddMembers = true;
+		this.allowPromoteDemoteMembers = false;
+		this.allowAddMembers = false;
 
-		this.callNotifications = true;
-		this.joinLeaveNotifications = true;
+		this.callNotifications = false;
+		this.joinLeaveNotifications = false;
 
 		this.enableSoundForMessages = true;
-		this.enableSoundForCalls = true;
+		this.enableSoundForCalls = false;
 
-		this.userVideoCall = true;
-		this.groupVideoCall = true;
-		this.userAudioCall = true;
-		this.groupAudioCall = true;
+		this.userVideoCall = false;
+		this.groupVideoCall = false;
+		this.userAudioCall = false;
+		this.groupAudioCall = false;
 
 		this.sendTypingIndicator = true;
 		this.showUserPresence = true;
 		this.showReadDeliveryReceipts = true;
 
-		this.threadedChats = true;
+		this.threadedChats = false;
 		this.hideDeletedMessages = false;
 
 		this.sendMessageInOneOnOne = true;
 		this.sendMessageInGroup = true;
-		this.editMessage = true;
-		this.deleteMessage = true;
-		this.replyingToMessage = true;
+		this.editMessage = false;
+		this.deleteMessage = false;
+		this.replyingToMessage = false;
 
-		this.sendEmojis = true;
-		this.sendEmojisInLargerSize = true;
+		this.sendEmojis = false;
+		this.sendEmojisInLargerSize = false;
 		this.sendGifs = false;
 		this.shareCopyForwardMessage = false;
-		this.sendFiles = true;
-		this.sendPhotoVideos = true;
-		this.sendVoiceNotes = true;
-		this.sendLiveReaction = true;
+		this.sendFiles = false;
+		this.sendPhotoVideos = false;
+		this.sendVoiceNotes = false;
+		this.sendLiveReaction = false;
 
-		this.sendMessageReaction = true;
-		this.collaborativeWhiteboard = true;
-		this.collaborativeDocument = true;
-		this.sendStickers = true;
+		this.sendMessageReaction = false;
+		this.collaborativeWhiteboard = false;
+		this.collaborativeDocument = false;
+		this.sendStickers = false;
 		this.shareLocation = false;
-		this.polls = true;
-		this.messageTranslation = true;
+		this.polls = false;
+		this.messageTranslation = false;
 
-		this.allowModeratorToDeleteMemberMessages = true;
+		this.allowModeratorToDeleteMemberMessages = false;
 		this.setGroupInQnaModeByModerators = false;
 		this.highlightMessageFromModerators = false;
-		this.emailReplies = true;
-		this.smartReplies = true;
-		this.callRecording = true;
-		this.callLiveStreaming = true;
-		this.callTranscription = true;
-		this.thumbnailGeneration = true;
-		this.linkPreview = true;
-		this.saveMessages = true;
-		this.pinMessages = true;
-		this.richMediaPreview = true;
-		this.voiceTranscription = true;
+		this.emailReplies = false;
+		this.smartReplies = false;
+		this.callRecording = false;
+		this.callLiveStreaming = false;
+		this.callTranscription = false;
+		this.thumbnailGeneration = false;
+		this.linkPreview = false;
+		this.saveMessages = false;
+		this.pinMessages = false;
+		this.richMediaPreview = false;
+		this.voiceTranscription = false;
 		this.mentions = true;
-		this.xssFilter = true;
-		this.profanityFilter = true;
-		this.imageModeration = true;
-		this.dataMasking = true;
-		this.malwareScanner = true;
-		this.sentimentAnalysis = true;
-		this.inflightMessageModeration = true;
-		this.messageHistory = true;
+		this.xssFilter = false;
+		this.profanityFilter = false;
+		this.imageModeration = false;
+		this.dataMasking = false;
+		this.malwareScanner = false;
+		this.sentimentAnalysis = false;
+		this.inflightMessageModeration = false;
+		this.messageHistory = false;
 
-		this.viewProfile = true;
+		this.viewProfile = false;
 		this.messageInPrivate = true;
 	}
 

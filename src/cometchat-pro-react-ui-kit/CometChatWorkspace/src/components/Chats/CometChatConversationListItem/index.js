@@ -439,7 +439,7 @@ class CometChatConversationListItem extends React.PureComponent {
 					</div>
 					<div css={itemRowStyle()} className="item__details_block_two">
 						<div css={itemLastMsgStyle(this.props)} className="item__details__last-message" onMouseEnter={event => this.toggleTooltip(event, true)} onMouseLeave={event => this.toggleTooltip(event, false)}>
-							{this.state.lastMessage}
+							{/* {this.state.lastMessage} */}
 						</div>
 						{unreadCount}
 					</div>

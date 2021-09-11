@@ -90,7 +90,6 @@ class CometChatMessages extends React.PureComponent {
 
 	componentDidMount() {
 		
-
 		this.type = this.getContext().type;
 		this.item = this.getContext().item;
 
@@ -269,7 +268,7 @@ class CometChatMessages extends React.PureComponent {
 					if (message.parentMessageId) {
 						this.updateReplyCount(messages);
 					} else {
-						this.smartReplyPreview(messages);
+						// this.smartReplyPreview(messages);
 						this.appendMessage(messages);
 					}
 
@@ -786,8 +785,9 @@ class CometChatMessages extends React.PureComponent {
 		let messageKey = messageList.findIndex(m => m._id === message._id);
 		if (messageKey > -1) {
 			const newMessageObj = { ...message };
+			const transformedMessage = this.messageListRef.transformSingleMessage(newMessageObj);
 
-			messageList.splice(messageKey, 1, newMessageObj);
+			messageList.splice(messageKey, 1, transformedMessage);
 			messageList.sort((a, b) => a.id - b.id);
 			this.setState({ messageList: messageList, scrollToBottom: true });
 		}
@@ -891,7 +891,9 @@ class CometChatMessages extends React.PureComponent {
 
 	//message is received or composed & sent
 	appendMessage = message => {
-		let messages = [...this.state.messageList, ...message];
+		const cloneObject = {...message[0]};
+		const transformedMessage = this.messageListRef.transformSingleMessage(cloneObject);
+		let messages = [...this.state.messageList, transformedMessage];
 		this.setState({ messageList: messages, scrollToBottom: true });
 	};
 
