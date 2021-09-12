@@ -48,12 +48,12 @@ function SignUp(props) {
       alert("Please input your email");
       return false;
     }
-    if (validator.isEmpty(password) || !validator.isLength(password, {min: 6})) {
-      alert("Please input your password. You password must have at least 6 characters");
+    if (validator.isEmpty(userName) || userName.includes(' ')) {
+      alert("Please input your user name. Your user name must not contain white space");
       return false;
     }
-    if (validator.isEmpty(userName)) {
-      alert("Please input your user name");
+    if (validator.isEmpty(password) || !validator.isLength(password, {min: 6})) {
+      alert("Please input your password. You password must have at least 6 characters");
       return false;
     }
     if (validator.isEmpty(confirmPassword)) {

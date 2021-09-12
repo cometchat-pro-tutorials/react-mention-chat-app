@@ -380,6 +380,11 @@ class CometChatMessageList extends React.PureComponent {
 			case enums.GROUP_MEMBER_KICKED:
 			case enums.GROUP_MEMBER_BANNED:
 			case enums.GROUP_MEMBER_UNBANNED:
+				this.initMembers().then(members => {
+					if (members && members.length !== 0) {
+						this.members.current = members;
+					}
+				});
 				this.onGroupUpdated(key, message, group, options);
 				break;
 			case enums.INCOMING_CALL_RECEIVED:
